@@ -1,0 +1,133 @@
+name: Release Windows Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw81'
+          cache: true
+
+      - name: Setup MSYS2 / MinGW
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            zip
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+
+      - name: Build with qmake
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $qtBin = Join-Path $env:QT_ROOT_DIR 'bin'
+          $mingwBin = 'C:\msys64\mingw64\bin'
+          $env:Path = "$qtBin;$mingwBin;$env:Path"
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          Set-Location build
+          qmake ..\HorseRacing\HorseRacing.pro
+          mingw32-make -j2
+
+      - name: Prepare portable package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $qtBin = Join-Path $env:QT_ROOT_DIR 'bin'
+          $mingwBin = 'C:\msys64\mingw64\bin'
+          $env:Path = "$qtBin;$mingwBin;$env:Path"
+          $stage = Join-Path $PWD 'dist\HorseRacing'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item .\build\release\HorseRacing.exe $stage
+          Copy-Item .\HorseRacing\ICON.ico $stage
+          windeployqt --release --compiler-runtime $stage\HorseRacing.exe
+          if (Test-Path .\HorseRacing\src) {
+            Copy-Item .\HorseRacing\src -Destination $stage\src -Recurse -Force
+          }
+          Compress-Archive -Path "$stage\*" -DestinationPath .\dist\HorseRacing-windows-portable.zip -Force
+
+      - name: Generate Inno Setup script for CI
+        shell: pwsh
+        run: |
+          $iss = @'
+          #define MyAppName "HorseRacing"
+          #define MyAppVersion "${{ github.ref_name }}"
+          #define MyAppExeName "HorseRacing.exe"
+
+          [Setup]
+          AppId={{8AA64F4B-B5C5-4D81-9CF8-E8A1E6051626}
+          AppName={#MyAppName}
+          AppVersion={#MyAppVersion}
+          DefaultDirName={autopf}\{#MyAppName}
+          DisableProgramGroupPage=yes
+          OutputDir=dist
+          OutputBaseFilename=HorseRacing-setup
+          Compression=lzma
+          SolidCompression=yes
+          WizardStyle=modern
+          SetupIconFile=HorseRacing\ICON.ico
+
+          [Languages]
+          Name: "english"; MessagesFile: "compiler:Default.isl"
+
+          [Tasks]
+          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+          [Files]
+          Source: "dist\HorseRacing\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+          [Icons]
+          Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+          Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+          [Run]
+          Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
+          '@
+          Set-Content -Path .\build\ci-installer.iss -Value $iss -Encoding UTF8
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" .\build\ci-installer.iss
+
+      - name: Ensure release exists
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "${{ github.ref_name }}" --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" --generate-notes
+          }
+
+      - name: Upload release assets
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ github.ref_name }}" .\dist\HorseRacing-windows-portable.zip .\dist\HorseRacing-setup.exe --repo "${{ github.repository }}" --clobber
