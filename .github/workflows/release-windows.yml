@@ -60,7 +60,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $qtBin = Join-Path $env:QT_ROOT_DIR 'bin'
           $mingwBin = 'C:\msys64\mingw64\bin'
-          $env:Path = "$qtBin;$mingwBin;$env:Path"
+          $platformPlugin = Join-Path $env:QT_ROOT_DIR 'plugins\platforms'
+          $env:Path = "$qtBin;$mingwBin;$platformPlugin;$env:Path"
           $stage = Join-Path $PWD 'dist\HorseRacing'
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item .\build\release\HorseRacing.exe $stage
