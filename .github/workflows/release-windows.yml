@@ -55,22 +55,15 @@ jobs:
           mingw32-make -j2
 
       - name: Prepare portable package
-        shell: pwsh
+        shell: cmd
         run: |
-          $ErrorActionPreference = 'Stop'
-          $qtBin = Join-Path $env:QT_ROOT_DIR 'bin'
-          $mingwBin = 'C:\msys64\mingw64\bin'
-          $stage = Join-Path $PWD 'dist\HorseRacing'
-          New-Item -ItemType Directory -Force -Path $stage | Out-Null
-          Copy-Item .\build\release\HorseRacing.exe $stage
-          Copy-Item .\HorseRacing\ICON.ico $stage
-          Copy-Item "$env:QT_PLUGIN_PATH\platforms" -Destination "$stage\platforms" -Recurse -Force
-          $env:Path = "$qtBin;$mingwBin;$env:Path"
-          windeployqt --release --compiler-runtime --qmldir . --dir $stage .\build\release\HorseRacing.exe
-          if (Test-Path .\HorseRacing\src) {
-            Copy-Item .\HorseRacing\src -Destination $stage\src -Recurse -Force
-          }
-          Compress-Archive -Path "$stage\*" -DestinationPath .\dist\HorseRacing-windows-portable.zip -Force
+          set PATH=%QT_ROOT_DIR%\bin;C:\msys64\mingw64\bin;%PATH%
+          mkdir dist\HorseRacing
+          copy build\release\HorseRacing.exe dist\HorseRacing\HorseRacing.exe
+          copy HorseRacing\ICON.ico dist\HorseRacing\ICON.ico
+          windeployqt --release --compiler-runtime --dir dist\HorseRacing build\release\HorseRacing.exe
+          if exist HorseRacing\src xcopy HorseRacing\src dist\HorseRacing\src /E /I /Y
+          powershell -NoProfile -Command "Compress-Archive -Path 'dist\HorseRacing\*' -DestinationPath 'dist\HorseRacing-windows-portable.zip' -Force"
 
       - name: Generate Inno Setup script for CI
         shell: pwsh
