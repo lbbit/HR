@@ -66,7 +66,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item .\build\release\HorseRacing.exe $stage
           Copy-Item .\HorseRacing\ICON.ico $stage
-          windeployqt --release --compiler-runtime $stage\HorseRacing.exe
+          windeployqt --release --compiler-runtime --qmldir . $stage\HorseRacing.exe
           if (Test-Path .\HorseRacing\src) {
             Copy-Item .\HorseRacing\src -Destination $stage\src -Recurse -Force
           }
