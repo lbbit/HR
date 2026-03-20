@@ -60,13 +60,13 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $qtBin = Join-Path $env:QT_ROOT_DIR 'bin'
           $mingwBin = 'C:\msys64\mingw64\bin'
-          $platformPlugin = Join-Path $env:QT_ROOT_DIR 'plugins\platforms'
-          $env:Path = "$qtBin;$mingwBin;$platformPlugin;$env:Path"
           $stage = Join-Path $PWD 'dist\HorseRacing'
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item .\build\release\HorseRacing.exe $stage
           Copy-Item .\HorseRacing\ICON.ico $stage
-          windeployqt --release --compiler-runtime --qmldir . $stage\HorseRacing.exe
+          Copy-Item "$env:QT_PLUGIN_PATH\platforms" -Destination "$stage\platforms" -Recurse -Force
+          $env:Path = "$qtBin;$mingwBin;$env:Path"
+          windeployqt --release --compiler-runtime --qmldir . --dir $stage .\build\release\HorseRacing.exe
           if (Test-Path .\HorseRacing\src) {
             Copy-Item .\HorseRacing\src -Destination $stage\src -Recurse -Force
           }
