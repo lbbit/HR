@@ -37,6 +37,35 @@
 - Inno Setup
 - GitHub Actions（已补充，用于自动构建 Windows 版本并上传到 Release）
 
+
+## 游戏截图
+
+下面这些截图来自项目实际运行界面，基本能反映这款大学时期 Qt 桌面小游戏的整体完成度和风格。
+
+### 启动与登录
+
+| 启动界面 | 登录界面 |
+| --- | --- |
+| ![启动界面](docs/images/01-start-screen.jpg) | ![登录界面](docs/images/02-login-screen.jpg) |
+
+### 注册与主菜单
+
+| 注册界面 | 主菜单 |
+| --- | --- |
+| ![注册界面](docs/images/03-register-screen.jpg) | ![主菜单](docs/images/04-main-menu.jpg) |
+
+### 游戏过程与排行榜
+
+| 赛马过程 | 排行榜 |
+| --- | --- |
+| ![赛马过程](docs/images/05-race-gameplay.jpg) | ![排行榜](docs/images/06-ranking-screen.jpg) |
+
+### 其他界面
+
+| 关于对话框 |
+| --- |
+| ![关于界面](docs/images/07-about-dialog.jpg) |
+
 ## 本地开发
 
 ### 1. 打开工程
