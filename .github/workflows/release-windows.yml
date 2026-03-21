@@ -52,12 +52,26 @@ jobs:
       - name: Prepare portable package
         shell: cmd
         run: |
-          set PATH=%QT_ROOT_DIR%\bin;C:\msys64\mingw64\bin;%PATH%
+          set PATH=%QT_ROOT_DIR%\bin;%QT_ROOT_DIR%\plugins\platforms;C:\msys64\mingw64\bin;%PATH%
+          if exist dist rmdir /S /Q dist
           mkdir dist\HorseRacing
           copy build\release\HorseRacing.exe dist\HorseRacing\HorseRacing.exe
           copy HorseRacing\ICON.ico dist\HorseRacing\ICON.ico
-          windeployqt --release --compiler-runtime --dir dist\HorseRacing build\release\HorseRacing.exe
+          mkdir dist\HorseRacing\platforms
+          copy %QT_ROOT_DIR%\plugins\platforms\qwindows.dll dist\HorseRacing\platforms\qwindows.dll
+          windeployqt --release --compiler-runtime --force --verbose 2 --dir dist\HorseRacing build\release\HorseRacing.exe
+          if exist %QT_ROOT_DIR%\bin\Qt5Core.dll copy %QT_ROOT_DIR%\bin\Qt5Core.dll dist\HorseRacing\Qt5Core.dll
+          if exist %QT_ROOT_DIR%\bin\Qt5Gui.dll copy %QT_ROOT_DIR%\bin\Qt5Gui.dll dist\HorseRacing\Qt5Gui.dll
+          if exist %QT_ROOT_DIR%\bin\Qt5Widgets.dll copy %QT_ROOT_DIR%\bin\Qt5Widgets.dll dist\HorseRacing\Qt5Widgets.dll
+          if exist %QT_ROOT_DIR%\bin\Qt5Multimedia.dll copy %QT_ROOT_DIR%\bin\Qt5Multimedia.dll dist\HorseRacing\Qt5Multimedia.dll
+          if exist %QT_ROOT_DIR%\bin\Qt5Network.dll copy %QT_ROOT_DIR%\bin\Qt5Network.dll dist\HorseRacing\Qt5Network.dll
+          if exist C:\msys64\mingw64\bin\libgcc_s_seh-1.dll copy C:\msys64\mingw64\bin\libgcc_s_seh-1.dll dist\HorseRacing\libgcc_s_seh-1.dll
+          if exist C:\msys64\mingw64\bin\libstdc++-6.dll copy C:\msys64\mingw64\bin\libstdc++-6.dll dist\HorseRacing\libstdc++-6.dll
+          if exist C:\msys64\mingw64\bin\libwinpthread-1.dll copy C:\msys64\mingw64\bin\libwinpthread-1.dll dist\HorseRacing\libwinpthread-1.dll
           if exist HorseRacing\src xcopy HorseRacing\src dist\HorseRacing\src /E /I /Y
+          dir dist\HorseRacing
+          if not exist dist\HorseRacing\Qt5Core.dll exit /b 1
+          if not exist dist\HorseRacing\platforms\qwindows.dll exit /b 1
           powershell -NoProfile -Command "Compress-Archive -Path 'dist\HorseRacing\*' -DestinationPath 'dist\HorseRacing-windows-portable.zip' -Force"
 
       - name: Ensure release exists
