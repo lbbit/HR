@@ -37,11 +37,6 @@ jobs:
             mingw-w64-x86_64-make
             zip
 
-      - name: Install Inno Setup
-        shell: pwsh
-        run: |
-          choco install innosetup --no-progress -y
-
       - name: Build with qmake
         shell: pwsh
         run: |
@@ -65,50 +60,6 @@ jobs:
           if exist HorseRacing\src xcopy HorseRacing\src dist\HorseRacing\src /E /I /Y
           powershell -NoProfile -Command "Compress-Archive -Path 'dist\HorseRacing\*' -DestinationPath 'dist\HorseRacing-windows-portable.zip' -Force"
 
-      - name: Generate Inno Setup script for CI
-        shell: pwsh
-        run: |
-          $iss = @'
-          #define MyAppName "HorseRacing"
-          #define MyAppVersion "${{ github.ref_name }}"
-          #define MyAppExeName "HorseRacing.exe"
-
-          [Setup]
-          AppId={{8AA64F4B-B5C5-4D81-9CF8-E8A1E6051626}
-          AppName={#MyAppName}
-          AppVersion={#MyAppVersion}
-          DefaultDirName={autopf}\{#MyAppName}
-          DisableProgramGroupPage=yes
-          OutputDir=dist
-          OutputBaseFilename=HorseRacing-setup
-          Compression=lzma
-          SolidCompression=yes
-          WizardStyle=modern
-          SetupIconFile=HorseRacing\ICON.ico
-
-          [Languages]
-          Name: "english"; MessagesFile: "compiler:Default.isl"
-
-          [Tasks]
-          Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-
-          [Files]
-          Source: "dist\HorseRacing\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-          [Icons]
-          Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-          Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
-          [Run]
-          Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; Flags: nowait postinstall skipifsilent
-          '@
-          Set-Content -Path .\build\ci-installer.iss -Value $iss -Encoding UTF8
-
-      - name: Build installer
-        shell: pwsh
-        run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" .\build\ci-installer.iss
-
       - name: Ensure release exists
         shell: pwsh
         env:
@@ -124,4 +75,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${{ github.ref_name }}" .\dist\HorseRacing-windows-portable.zip .\dist\HorseRacing-setup.exe --repo "${{ github.repository }}" --clobber
+          gh release upload "${{ github.ref_name }}" .\dist\HorseRacing-windows-portable.zip --repo "${{ github.repository }}" --clobber
